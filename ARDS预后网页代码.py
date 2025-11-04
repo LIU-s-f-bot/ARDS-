@@ -33,9 +33,9 @@ df.rename(columns={"年龄":"年龄",
                    "APACHE Ⅱ":"APACHE Ⅱ",
                    "SOFA":"SOFA",
                    "镇静时间(hr)":"镇静时间(hr)",
-                   "ARDS分级":"ARDS分级是否为3级",
+                   "ARDS分级":"ARDS分级",
                    "免疫抑制人群":"是否为免疫抑制人群",
-                   "呼吸支持方式":"呼吸支持方式是否为机械通气"},inplace=True)
+                   "呼吸支持方式":"呼吸支持方式"},inplace=True)
 #删除rename
 # Define variables
 continuous_vars = [
@@ -49,9 +49,9 @@ continuous_vars = [
 'SOFA',
 '镇静时间(hr)']
 categorical_vars = [
-    'ARDS分级是否为3级',  # 使用重命名后的列名
+    'ARDS分级',  # 使用重命名后的列名
     '是否为免疫抑制人群',  # 使用重命名后的列名
-    '呼吸支持方式是否为机械通气',  # 使用重命名后的列名
+    '呼吸支持方式',  # 使用重命名后的列名
 ]
 # Combine all variables for unified input
 all_vars = continuous_vars + categorical_vars
@@ -172,11 +172,11 @@ Supplement:
 *   P02/FIO2_D2代表ARDS诊断第二天的氧合指数。
 *   APACHEII和SOFA评分为ARDS诊断当天的评分。
 *   LAC_D1代表ARDS诊断当天的乳酸水平。
-*   呼吸支持方式是否为有创机械通气:1代表有创机械通气;0代表未进行有创机械通气。
+*   呼吸支持方式：1代表氧疗；2代表无创机械通气；3代表有创机械通气。
 *   是否为免疫抑制人群:1代表长期激素治疗（等效泼尼松≥20mg/d持续≥14天或总剂量＞700mg）; 0则无长期激素治疗。
 *   24小时总尿量代表着ARDS诊断后24小时的总尿量。
-*   ARDS分级是否为3级，1代表确诊ARDS的氧合指数小于等于100，0代表确诊ARDS的氧合指数大于100。
-*   住ICU时间单位为小时，一天即24H。
+*   ARDS分级：根据柏林定义，1代表ARDS1级，2代表2ARDS2级，3代表ARDS3级。
+*   住ICU时间，单位为天。
 """
 st.markdown(disclaimer_text)
 
