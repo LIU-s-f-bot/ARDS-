@@ -95,30 +95,30 @@ y = df['结局']
 # Train-test split
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=999)
 
+
 # --- Streamlit App Interface ---
 
 # Centered Title
-st.markdown("<h1 style='text-align: center;'>Prognostic model of ARDS patients based on logistic regression</h1>",
-            unsafe_allow_html=True)
+st.markdown("<h1 style='text-align: center;'>Prognostic model of ARDS patients based on logistic regression</h1>", unsafe_allow_html=True)
 
 # --- 1. User Input for X values (Unified, 4 columns) ---
 st.header("1. Enter Patient Data")
-user_input = {}  # summarize user input data
-input_valid = True  # Flag to check if all inputs are valid
+user_input = {} # summarize user input data
+input_valid = True # Flag to check if all inputs are valid
 # Create input fields for all variables in 4 columns
 # Combine continuous and categorical for unified handling in layout
-input_cols = st.columns(4)  # Changed to 4 columns
+input_cols = st.columns(4) # Changed to 4 columns
 for i, var in enumerate(all_vars):
-    with input_cols[i % 4]:  # Cycle through 4 columns
+    with input_cols[i % 4]: # Cycle through 4 columns
         if var in continuous_vars:
             # Handle continuous variables - No default value
             # 修正：移除FiO2的特殊处理，因为变量列表中只有PO2/FiO2_D2
             user_val = st.number_input(f"{var}", value=None, format="%.4f", step=0.01, placeholder="please enter")
             if user_val is None:
                 input_valid = False
-                # st.warning(f"请输入 {var} 的值")
+                #st.warning(f"请输入 {var} 的值")
             user_input[var] = user_val
-        else:  # Handle categorical variables
+        else: # Handle categorical variables
             # 修正：直接从数据中获取唯一值，而不是从编码器中获取
             options = np.unique(df[var].astype(str))
             # Default to the first category or a placeholder
@@ -126,49 +126,55 @@ for i, var in enumerate(all_vars):
             selected_option = st.selectbox(f"{var}", options=options, index=None, placeholder="please enter")
             if selected_option is None:
                 input_valid = False
-                # st.warning(f"请选择 {var} 的值")
+                #st.warning(f"请选择 {var} 的值")
             user_input[var] = selected_option
+
 
 # --- 3. Prediction Button and Logic ---
 if st.button("Train Model and Predict"):
     if not input_valid:
         st.error("error, please check all X is inputed")
     else:
-        # Create a DataFrame from user input
-        input_data = pd.DataFrame([user_input])
-
+        
         # --- Train the model with fixed parameters ---
         try:
-            # Use the train/test split defined earlier
-            # model
+             # 创建输入数据的DataFrame
+            input_data = pd.DataFrame([user_input])
+            
+            # 应用相同的预处理
+            input_processed = preprocessor.transform(input_data)
+            input_processed_df = pd.DataFrame(input_processed, columns=feature_names)
+            
+            # 确保列的顺序与训练时完全一致
+            input_processed_df = input_processed_df[training_feature_columns]
+            
+            # 训练模型
             model = LogisticRegression(
                 random_state=999,
                 penalty='l2',
-                C=0.3593813663804626)
-            model.fit(X_train, y_train)  # Train on the training set
+                C=0.3593813663804626
+            )
+            model.fit(X_train, y_train)
             st.success("Model trained successfully with fixed parameters!")
-
-            # Apply the same preprocessing pipeline to input data
-            input_processed = preprocessor.transform(input_data)
-            # 修正：将预处理后的数据转换为DataFrame并删除相同的列
-            input_processed_df = pd.DataFrame(input_processed, columns=feature_names)
-            input_processed_df = input_processed_df.drop(columns=columns_to_drop)
-
-            # Make prediction using the newly trained model
-            # Prediction probabilities
-            prediction_proba = model.predict_proba(input_processed)[0]
-
-            # Display results
+            
+            # 进行预测
+            prediction_proba = model.predict_proba(input_processed_df)[0]
+            
+            # 显示结果
             st.header("Prediction Result")
-            # Assuming class 1 is 'ARDS死亡'
             prob_label = "Mortality probability of ARDS"
-            st.metric(label=prob_label, value=f"{prediction_proba[1] * 100:.2f}%")  # Displaying probability of class 1
-
+            st.metric(label=prob_label, value=f"{prediction_proba[1]*100:.2f}%")
+            
         except Exception as e:
             st.error(f"An error occurred during model training or prediction: {e}")
+            # 添加调试信息
+            st.write(f"Training features: {len(training_feature_columns)}")
+            st.write(f"Input features after preprocessing: {len(input_processed_df.columns)}")
+            st.write(f"Training feature columns: {training_feature_columns}")
+            st.write(f"Input feature columns: {input_processed_df.columns.tolist()}")
 
 # --- Disclaimer Section at the Bottom ---
-st.markdown("---")  # Horizontal line separator
+st.markdown("---")
 disclaimer_text = """
 **Disclaimer:**
 
@@ -176,13 +182,15 @@ Supplement:
 *   P02/FIO2_D2代表ARDS诊断第二天的氧合指数。
 *   APACHEII和SOFA评分为ARDS诊断当天的评分。
 *   LAC_D1代表ARDS诊断当天的乳酸水平。
-*   呼吸支持方式是否为有创机械通气:1代表有创机械通气;0代表未进行有创机械通气。
-*   是否为免疫抑制人群:1代表长期激素治疗（等效泼尼松≥20mg/d持续≥14天或总剂量＞700mg）; 0则无长期激素治疗。
+*   呼吸支持方式是否为有创机械通气：1代表有创机械通气；0代表未进行有创机械通气。
+*   是否为免疫抑制人群：1代表长期激素治疗（等效泼尼松≥20mg/d持续≥14天或总剂量＞700mg）; 0则无长期激素治疗。
 *   24小时总尿量代表着ARDS诊断后24小时的总尿量。
 *   ARDS分级是否为3级，1代表确诊ARDS的氧合指数小于等于100，0代表确诊ARDS的氧合指数大于100。
+*   住ICU时间单位为小时，一天即24H。
 
 """
 st.markdown(disclaimer_text)
+
 
 
 
