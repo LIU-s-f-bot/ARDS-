@@ -136,7 +136,7 @@ for i, var in enumerate(all_vars):
             user_input[var] = selected_option
 
 # --- 3. Prediction Button and Logic ---
-if st.button("预测患者死亡概率为"):
+if st.button("预测患者死亡概率"):
     if not input_valid:
         st.error("error, please check all X is inputed")
     else:
@@ -182,7 +182,7 @@ disclaimer_text = """
 **补充说明:**
 *   D1、D2分别代表诊断ARDS第一天和第二天。
 *   APACHEII和SOFA评分为ARDS诊断当天的评分。
-*   是否为免疫抑制人群:1代表长期激素治疗（等效泼尼松≥20mg/d持续≥14天或总剂量＞700mg）; 0则无长期激素治疗。
+*   是否为免疫抑制人群：1代表长期激素治疗（等效泼尼松≥20mg/d持续≥14天或总剂量＞700mg）；0则无长期激素治疗。
 *   24小时总尿量代表着ARDS诊断后24小时的总尿量。
 *   ARDS分级：根据柏林定义，1代表轻度，2代表中度，3代表重度。
 *   吸烟指数=每日吸烟指数*吸烟年数
