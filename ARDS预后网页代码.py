@@ -1,6 +1,6 @@
 
 # Load data
-# Note: Ensure '12交集特征.xlsx' is in the same directory or provide the full path
+# Note: Ensure '20交集特征.xlsx' is in the same directory or provide the full path
 import streamlit as st
 import pandas as pd
 import numpy as np
@@ -18,40 +18,53 @@ st.set_page_config(layout="wide")
 # --- Your Provided Code (Adapted for Streamlit) ---
 
 # Load data
-# Note: Ensure '12交集特征.xlsx' is in the same directory or provide the full path
+# Note: Ensure '20交集特征.xlsx' is in the same directory or provide the full path
 try:
-    df = pd.read_excel('12交集特征.xlsx')
+    df = pd.read_excel('交集特征20.xlsx')
 except FileNotFoundError:
     st.error("Error, file not found")
     st.stop()
-df.rename(columns={"年龄":"年龄",
-                   "BMI":"BMI",
-                   "LAC_D1":"LAC_D1",
-                   "PO2/FiO2_D2":"PO2/FiO2_D2",
-                   "24小时总尿量(ml)":"24小时总尿量(ml)",
-                   "住ICU时间":"住ICU时间",
-                   "APACHE Ⅱ":"APACHE Ⅱ",
-                   "SOFA":"SOFA",
-                   "镇静时间(hr)":"镇静时间(hr)",
-                   "ARDS分级":"ARDS分级",
-                   "免疫抑制人群":"是否为免疫抑制人群",
-                   "呼吸支持方式":"呼吸支持方式"},inplace=True)
+df.rename(columns={
+                    "APACHE Ⅱ":"APACHE Ⅱ",
+                    "SOFA":"SOFA",
+                    "LAC_D1":"LAC(mmol/L)_D1",
+                    "PO2/FiO2_D2":"PO2/FiO2_D2",
+                    "BMI":"BMI",
+                    "WBC":"WBC(*10^9/L)_D1",
+                    "LYM"："LYM(*10^9/L)_D1",
+                    "PH_D2"："PH_D2",
+                    "镇静时间(hr)"："镇静时间(hr)",
+                    "24小时总尿量(ml)"："24小时总尿量(ml)",
+                    "吸烟指数"："吸烟指数",
+                    "TBIL(μmolL)"："TBIL(μmolL)_D1",
+                    "PO2_D1"："PO2(mmHg)_D1",
+                    "ARDS分级":"ARDS分级",
+                    "免疫抑制人群":"是否为免疫抑制人群",
+                    "冠心病":"是否患有冠心病"},inplace=True)
 #删除rename
 # Define variables
 continuous_vars = [
-'年龄',
-'BMI',
-'LAC_D1',
-'PO2/FiO2_D2',
-'24小时总尿量(ml)',
-'住ICU时间',
 'APACHE Ⅱ',
 'SOFA',
-'镇静时间(hr)']
+'LAC(mmol/L)_D1',
+'PO2/FiO2_D2',
+'BMI',
+'WBC(*10^9/L)_D1',
+'LYM(*10^9/L)_D1',
+'PH_D2',
+'镇静时间(hr)',
+'24小时总尿量(ml)',
+'吸烟指数',
+'TBIL(μmolL)_D1',
+'PO2(mmHg)_D1',
+
+
+
+]
 categorical_vars = [
-    'ARDS分级',  # 使用重命名后的列名
-    '是否为免疫抑制人群',  # 使用重命名后的列名
-    '呼吸支持方式',  # 使用重命名后的列名
+'ARDS分级', # 使用重命名后的列名
+'是否为免疫抑制人群',
+'是否患有冠心病'
 ]
 # Combine all variables for unified input
 all_vars = continuous_vars + categorical_vars
@@ -59,7 +72,7 @@ all_vars = continuous_vars + categorical_vars
 preprocessor = ColumnTransformer(
     transformers=[
         ('num', StandardScaler(), continuous_vars),
-        ('cat', OneHotEncoder(handle_unknown='ignore'), categorical_vars)  # 这里不再传递selected_categorical_vars，而是使用categorical_vars，并且OneHotEncoder不传递参数
+        ('cat', OneHotEncoder(drop='first',handle_unknown='ignore'), categorical_vars)  # 这里不再传递selected_categorical_vars，而是使用categorical_vars，并且OneHotEncoder不传递参数
     ])
 
 # 应用预处理
@@ -80,7 +93,7 @@ except AttributeError:
 X_processed_df = pd.DataFrame(X_processed, columns=feature_names)
 
 # 定义要删除的列
-drop_columns = ['是否为免疫抑制人群_0', 'ARDS分级是否为3级_1', 'ARDS分级是否为3级_2', '呼吸支持方式是否为机械通气_1', '呼吸支持方式是否为机械通气_2']
+drop_columns = ['ARDS分级_1', 'ARDS分级_2']
 
 # 只删除存在的列
 columns_to_drop = [col for col in drop_columns if col in X_processed_df.columns]
@@ -100,10 +113,10 @@ training_feature_columns = X_train.columns.tolist()
 
 # --- Streamlit App Interface ---
 
-st.markdown("<h1 style='text-align: center;'>Prognostic model of ARDS patients based on logistic regression</h1>", unsafe_allow_html=True)
+st.markdown("<h1 style='text-align: center;'>基于支持向量机的急性呼吸窘迫综合征患者的预后模型</h1>", unsafe_allow_html=True)
 
 # --- 1. User Input for X values ---
-st.header("1. Enter Patient Data")
+st.header("1. 请输入患者信息")
 user_input = {}
 input_valid = True
 
@@ -123,7 +136,7 @@ for i, var in enumerate(all_vars):
             user_input[var] = selected_option
 
 # --- 3. Prediction Button and Logic ---
-if st.button("Train Model and Predict"):
+if st.button("预测患者死亡概率为"):
     if not input_valid:
         st.error("error, please check all X is inputed")
     else:
@@ -139,11 +152,11 @@ if st.button("Train Model and Predict"):
             input_processed_df = input_processed_df[training_feature_columns]
             
             # 训练模型
-            model = LogisticRegression(
-                random_state=999,
-                penalty='l2',
-                C=0.3593813663804626
-            )
+            model = SVC(random_state=999,
+                        kernel='rbf',
+                        probability=True,
+                        C = 0.5,
+                        gamma=0.01)
             model.fit(X_train, y_train)
             st.success("Model trained successfully with fixed parameters!")
             
@@ -166,17 +179,13 @@ if st.button("Train Model and Predict"):
 # --- Disclaimer Section at the Bottom ---
 st.markdown("---")
 disclaimer_text = """
-**Disclaimer:**
-
-Supplement:
-*   P02/FIO2_D2代表ARDS诊断第二天的氧合指数。
+**补充说明:**
+*   D1、D2分别代表诊断ARDS第一天和第二天。
 *   APACHEII和SOFA评分为ARDS诊断当天的评分。
-*   LAC_D1代表ARDS诊断当天的乳酸水平。
-*   呼吸支持方式：1代表氧疗；2代表无创机械通气；3代表有创机械通气。
 *   是否为免疫抑制人群:1代表长期激素治疗（等效泼尼松≥20mg/d持续≥14天或总剂量＞700mg）; 0则无长期激素治疗。
 *   24小时总尿量代表着ARDS诊断后24小时的总尿量。
-*   ARDS分级：根据柏林定义，1代表ARDS1级，2代表ARDS2级，3代表ARDS3级。
-*   住ICU时间，单位为天。
+*   ARDS分级：根据柏林定义，1代表轻度，2代表中度，3代表重度。
+*   吸烟指数=每日吸烟指数*吸烟年数
 """
 st.markdown(disclaimer_text)
 
